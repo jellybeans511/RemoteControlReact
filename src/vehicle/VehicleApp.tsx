@@ -81,6 +81,12 @@ export const VehicleApp: React.FC = () => {
     },
   });
 
+  // attachControlChannelをrefで保持して依存配列を安定化
+  const attachControlChannelRef = React.useRef(attachControlChannel);
+  React.useEffect(() => {
+    attachControlChannelRef.current = attachControlChannel;
+  }, [attachControlChannel]);
+
   const { connection: pureConnection } = useAnswerConnection({
     signalingUrl: config.signalingUrl,
     answerPeerId: config.answerPeerId || "tractor-1",
@@ -121,10 +127,21 @@ export const VehicleApp: React.FC = () => {
     }
   }, [stream]);
 
+  // Device変更時にrecapture（ストリームが既にある場合のみ）
+  const prevDeviceIdRef = React.useRef<string | null>(null);
   React.useEffect(() => {
-    if (!topics.stream.get()) return;
-    void camera.capture();
-  }, [camera, topics.stream, videoProfile.deviceId]);
+    const currentDeviceId = videoProfile.deviceId;
+    // デバイスIDが変わった かつ ストリームが既に存在する場合のみrecapture
+    if (
+      prevDeviceIdRef.current !== null &&
+      prevDeviceIdRef.current !== currentDeviceId &&
+      topics.stream.get()
+    ) {
+      void camera.capture();
+    }
+    prevDeviceIdRef.current = currentDeviceId;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videoProfile.deviceId]);
 
   React.useEffect(() => {
     if (devices.length > 0 && (!videoProfile.deviceId || videoProfile.deviceId === "default")) {
@@ -138,6 +155,13 @@ export const VehicleApp: React.FC = () => {
       skywayConnRef.current = null;
       return;
     }
+
+    // SkyWay SDKがロードされているか確認
+    if (typeof (window as any).Peer === "undefined") {
+      console.error("SkyWay old SDK (Peer) is not loaded on this page");
+      return;
+    }
+
     try {
       const conn = createOldSkywayAnswer({
         apiKey: config.skywayApiKey,
@@ -145,24 +169,28 @@ export const VehicleApp: React.FC = () => {
         onOpen: (id) => setConfig("skywayMyId", id),
       });
       skywayConnRef.current = conn;
-      attachControlChannel(
+      attachControlChannelRef.current(
         (conn as any).dataChannel as RTCDataChannel | OldSkywayDataChannel | null
       );
-      if (stream) conn.setLocalStream(stream);
+      // 既にstreamがあればセット
+      const currentStream = topics.stream.get();
+      if (currentStream) conn.setLocalStream(currentStream);
     } catch (e) {
       console.error("OldSkyWay answer init failed", e);
+      return; // エラー時はここでreturn
     }
+
     return () => {
       skywayConnRef.current?.close();
       skywayConnRef.current = null;
     };
   }, [
-    attachControlChannel,
+    // attachControlChannelはrefで安定化済み
     config.engine,
     config.skywayApiKey,
     config.skywayLocalId,
     setConfig,
-    stream,
+    topics.stream,
   ]);
 
   React.useEffect(() => {

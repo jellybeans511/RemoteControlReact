@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AnswerConnection,
   AnswerConnectionOptions,
@@ -29,14 +29,24 @@ export const useAnswerConnection = (opts: AnswerConnectionOptions) => {
   const [dataChannel, setDataChannel] = useState<RTCDataChannel | null>(null);
   const [status, setStatus] = useState<"idle" | "waiting_offer" | "connected" | "error">("idle");
 
+  // コールバックをrefで保持して安定化
+  const onSignalingStateRef = useRef(onSignalingState);
+  const onIceStateRef = useRef(onIceState);
+  const onDataChannelRef = useRef(onDataChannel);
+  useEffect(() => {
+    onSignalingStateRef.current = onSignalingState;
+    onIceStateRef.current = onIceState;
+    onDataChannelRef.current = onDataChannel;
+  }, [onSignalingState, onIceState, onDataChannel]);
+
   const close = useCallback(() => {
     try {
       pcRef.current?.close();
-    } catch (_) {}
+    } catch (_) { }
     pcRef.current = null;
     try {
       wsRef.current?.close();
-    } catch (_) {}
+    } catch (_) { }
     wsRef.current = null;
     setStatus("idle");
   }, []);
@@ -97,7 +107,7 @@ export const useAnswerConnection = (opts: AnswerConnectionOptions) => {
     wsRef.current = ws;
     ws.onopen = () => {
       setStatus("waiting_offer");
-      onSignalingState?.("Connected");
+      onSignalingStateRef.current?.("Connected");
       const register: SignalingMessage = {
         type: "register",
         payload: { role: "answer", peerId: answerPeerId },
@@ -106,10 +116,10 @@ export const useAnswerConnection = (opts: AnswerConnectionOptions) => {
     };
     ws.onerror = () => {
       setStatus("error");
-      onSignalingState?.("Error");
+      onSignalingStateRef.current?.("Error");
     };
     ws.onclose = () => {
-      onSignalingState?.("Disconnected");
+      onSignalingStateRef.current?.("Disconnected");
     };
 
     const pc = new RTCPeerConnection(useIceServers ? { iceServers: ICE_SERVERS } : {});
@@ -135,13 +145,13 @@ export const useAnswerConnection = (opts: AnswerConnectionOptions) => {
       }
     };
     pc.oniceconnectionstatechange = () => {
-      onIceState?.(pc.iceConnectionState);
+      onIceStateRef.current?.(pc.iceConnectionState);
     };
     pc.ondatachannel = (event) => {
       const dc = event.channel;
       dataChannelRef.current = dc;
       setDataChannel(dc);
-      if (onDataChannel) onDataChannel(dc);
+      if (onDataChannelRef.current) onDataChannelRef.current(dc);
       dc.onclose = () => setDataChannel(null);
     };
 
@@ -178,7 +188,7 @@ export const useAnswerConnection = (opts: AnswerConnectionOptions) => {
         await handleSignal({ kind: "ice", candidate: msg.payload.candidate });
       }
     };
-  }, [answerPeerId, signalingUrl, useIceServers, mediaStream, close, handleSignal, onIceState, onSignalingState, flushPendingIce]);
+  }, [answerPeerId, signalingUrl, useIceServers, mediaStream, close, handleSignal, flushPendingIce]);
 
   const replaceStream = useCallback((nextStream: MediaStream) => {
     const pc = pcRef.current;
@@ -200,12 +210,12 @@ export const useAnswerConnection = (opts: AnswerConnectionOptions) => {
     return () => close();
   }, [close]);
 
-  const conn: AnswerConnection = {
+  const conn: AnswerConnection = useMemo(() => ({
     start,
     close,
     replaceStream,
     dataChannel,
-  };
+  }), [start, close, replaceStream, dataChannel]);
 
   return { status, connection: conn };
 };

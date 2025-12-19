@@ -1,4 +1,6 @@
-# AGENTS.md — WebRTC Remote Driving Rewrite (JS / Chrome-only)
+# AGENTS.md — WebRTC Remote Driving Rewrite
+
+コードの解説は日本語ですること。
 
 ## プロジェクト概要
 
