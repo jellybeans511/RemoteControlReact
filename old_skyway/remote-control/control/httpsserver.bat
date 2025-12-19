@@ -1,0 +1,1 @@
+http-server -c-1 . --ssl --key ./server.key --cert ./server.crt 
