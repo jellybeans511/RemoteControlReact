@@ -13,6 +13,8 @@ export type MonitorCardProps = {
   card: MonitorCardState;
   onChange: (updater: (card: MonitorCardState) => MonitorCardState) => void;
   onRemove?: () => void;
+  isTeleOpSelected: boolean;
+  onSelectTeleOp: () => void;
 };
 
 /**
@@ -23,6 +25,8 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
   card,
   onChange,
   onRemove,
+  isTeleOpSelected,
+  onSelectTeleOp,
 }) => {
   // --- State & Refs ---
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -40,11 +44,27 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
 
   // --- Gamepad Control ---
   const { control, pads, ordered } = useGamepadControl();
+
+  // Calculate effective control based on selection
+  const effectiveControl = isTeleOpSelected
+    ? control
+    : {
+      isRemoteCont: false,
+      inputSteer: 0,
+      inputEngineCycle: 0,
+      inputShuttle: 0,
+      inputPtoOn: 0,
+      inputHorn: 0,
+      inputGear: 0,
+      inputPtoHeight: 0,
+      inputSpeed: 0,
+    };
+
   // 最新の制御情報をRefで保持（Bridgeに渡すため）
-  const controlRef = useRef<ControlInfo>(control);
+  const controlRef = useRef<ControlInfo>(effectiveControl);
   useEffect(() => {
-    controlRef.current = control;
-  }, [control]);
+    controlRef.current = effectiveControl;
+  }, [effectiveControl]);
 
   // --- WebRTC Engines ---
 
@@ -59,7 +79,7 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
       onRemoteStream: (stream) => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          videoRef.current.play?.().catch(() => {});
+          videoRef.current.play?.().catch(() => { });
         }
       },
       onSignalingState: (s) => setField("signalingStatus", s),
@@ -101,8 +121,8 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
     card.engine === "pure"
       ? pureDataChannel
       : card.engine === "oldskyway"
-      ? skywayDataChannel
-      : null;
+        ? skywayDataChannel
+        : null;
 
   const {
     robotInfo,
@@ -231,6 +251,28 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
           New SkyWay (stub)
         </label>
       </Section>
+
+      <div style={{ marginTop: 8 }}>
+        <label
+          style={{
+            fontWeight: "bold",
+            padding: "4px 8px",
+            background: isTeleOpSelected ? "#e6fffa" : "#fff",
+            border: isTeleOpSelected ? "1px solid #38b2ac" : "1px solid #ccc",
+            borderRadius: 4,
+            cursor: "pointer",
+            display: "inline-block",
+          }}
+        >
+          <input
+            type="radio"
+            checked={isTeleOpSelected}
+            onChange={onSelectTeleOp}
+            style={{ marginRight: 6 }}
+          />
+          Use Tele-Operation (Gamepad)
+        </label>
+      </div>
 
       {/* 共通: Video & Canvas（全Engine共通） */}
       <div

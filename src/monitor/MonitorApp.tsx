@@ -7,7 +7,13 @@ import { MonitorCardState, createMonitorCardState } from "./types/monitor";
  * 複数のMonitorCardを管理
  */
 export const MonitorApp: React.FC = () => {
-  const [cards, setCards] = useState<MonitorCardState[]>(() => [createMonitorCardState()]);
+  const [cards, setCards] = useState<MonitorCardState[]>(() => [
+    createMonitorCardState(),
+  ]);
+  // Default to the first card active
+  const [activeTeleOpCardId, setActiveTeleOpCardId] = useState<string>(
+    cards[0]?.id
+  );
 
   const addCard = () =>
     setCards((prev) => {
@@ -18,10 +24,13 @@ export const MonitorApp: React.FC = () => {
       return [...prev, card];
     });
 
-  const removeCard = (id: string) => setCards((prev) => prev.filter((c) => c.id !== id));
+  const removeCard = (id: string) =>
+    setCards((prev) => prev.filter((c) => c.id !== id));
 
-  const updateCard = (id: string, updater: (prev: MonitorCardState) => MonitorCardState) =>
-    setCards((prev) => prev.map((c) => (c.id === id ? updater(c) : c)));
+  const updateCard = (
+    id: string,
+    updater: (prev: MonitorCardState) => MonitorCardState
+  ) => setCards((prev) => prev.map((c) => (c.id === id ? updater(c) : c)));
 
   return (
     <div style={{ padding: 16 }}>
@@ -34,6 +43,8 @@ export const MonitorApp: React.FC = () => {
           card={card}
           onChange={(updater) => updateCard(card.id, updater)}
           onRemove={cards.length > 1 ? () => removeCard(card.id) : undefined}
+          isTeleOpSelected={card.id === activeTeleOpCardId}
+          onSelectTeleOp={() => setActiveTeleOpCardId(card.id)}
         />
       ))}
     </div>
