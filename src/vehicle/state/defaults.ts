@@ -14,7 +14,7 @@ export const AUTORUN_WS_URL = "ws://127.0.0.1:8081";
 
 export const defaultVehicleConfig: VehicleConfig = {
   engine: "pure",
-  answerPeerId: "tractor-01",
+  answerPeerId: "robot-1",
   signalingUrl: DEFAULT_SIGNALING_URL,
   useStunTurn: true,
   skywayApiKey: DEFAULT_SKYWAY_API_KEY,

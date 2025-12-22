@@ -89,7 +89,7 @@ export const VehicleApp: React.FC = () => {
 
   const { connection: pureConnection } = useAnswerConnection({
     signalingUrl: config.signalingUrl,
-    answerPeerId: config.answerPeerId || "tractor-1",
+    answerPeerId: config.answerPeerId || "robot-1",
     useIceServers: config.useStunTurn,
     mediaStream: stream,
     onSignalingState: (s) =>
@@ -100,14 +100,12 @@ export const VehicleApp: React.FC = () => {
 
   const connectPure = React.useCallback(async () => {
     if (config.engine !== "pure") return;
-    if (!topics.stream.get()) {
-      await camera.capture().catch((e) => console.warn("Capture before connect failed", e));
-    }
+    // 自動キャプチャ削除: 明示的にCaptureボタンを押させる
     pureConnection.start().catch((e) => {
       console.error(e);
       topics.statuses.update((prev) => ({ ...prev, signaling: "Error" }));
     });
-  }, [camera, config.engine, pureConnection, topics.statuses, topics.stream]);
+  }, [config.engine, pureConnection, topics.statuses]);
 
   React.useEffect(() => {
     if (config.engine !== "pure") {
