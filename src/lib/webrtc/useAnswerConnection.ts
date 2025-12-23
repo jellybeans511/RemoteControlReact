@@ -206,6 +206,25 @@ export const useAnswerConnection = (opts: AnswerConnectionOptions) => {
     });
   }, []);
 
+  const setVideoBitrate = useCallback(async (bitrate: number) => {
+    const pc = pcRef.current;
+    if (!pc) return;
+    const sender = pc.getSenders().find((s) => s.track && s.track.kind === "video");
+    if (!sender) return;
+
+    const params = sender.getParameters();
+    if (!params.encodings) params.encodings = [{}];
+    if (params.encodings.length === 0) params.encodings.push({});
+
+    params.encodings[0].maxBitrate = bitrate;
+    try {
+      await sender.setParameters(params);
+      console.log(`Applied maxBitrate=${bitrate}`);
+    } catch (e) {
+      console.warn("Failed to set video bitrate", e);
+    }
+  }, []);
+
   useEffect(() => {
     return () => close();
   }, [close]);
@@ -214,8 +233,9 @@ export const useAnswerConnection = (opts: AnswerConnectionOptions) => {
     start,
     close,
     replaceStream,
+    setVideoBitrate,
     dataChannel,
-  }), [start, close, replaceStream, dataChannel]);
+  }), [start, close, replaceStream, setVideoBitrate, dataChannel]);
 
   return { status, connection: conn };
 };

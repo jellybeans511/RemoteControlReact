@@ -132,7 +132,7 @@ export const useDataChannelBridge = ({ dataChannel, controlRef }: UseDataChannel
         }
     }, [dataChannel]);
 
-    const sendVideoQuality = useCallback((quality: { width: number, height: number, frameRate: number, bitrate: number }) => {
+    const sendVideoQuality = useCallback((quality: { width: number, height: number, framerate: number, bitrate: number }) => {
         if (!dataChannel || dataChannel.readyState !== "open") {
             console.warn("DataChannel not open");
             return;

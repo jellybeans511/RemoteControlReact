@@ -78,6 +78,9 @@ export const VehicleApp: React.FC = () => {
       const normalized = normalizeVideoProfile(req);
       topics.videoProfile.update((prev) => ({ ...prev, ...normalized }));
       await camera.applyOutboundConstraints(normalized);
+      if (typeof normalized.bitrate === "number") {
+        await pureConnection.setVideoBitrate(normalized.bitrate);
+      }
     },
   });
 

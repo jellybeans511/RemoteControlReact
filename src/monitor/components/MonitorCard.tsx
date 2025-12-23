@@ -186,7 +186,7 @@ export const MonitorCard: React.FC<MonitorCardProps> = ({
     sendVideoQuality({
       width: Number(card.videoWidth),
       height: Number(card.videoHeight),
-      frameRate: Number(card.videoFramerate),
+      framerate: Number(card.videoFramerate),
       bitrate: Number(card.videoBitrate),
     });
   };

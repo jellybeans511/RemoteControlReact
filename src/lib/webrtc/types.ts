@@ -34,11 +34,14 @@ export type LegacyIceMessage = {
   payload: { candidate: RTCIceCandidateInit };
 };
 
+export type LegacyOfferMessage = { type: "offer"; payload: { sdp: string } };
+
 export type SignalingMessage =
   | RegisterMessage
   | SignalEnvelope
   | LegacyAnswerMessage
-  | LegacyIceMessage;
+  | LegacyIceMessage
+  | LegacyOfferMessage;
 
 export type OfferConnectionOptions = {
   signalingUrl: string;
@@ -72,5 +75,6 @@ export type AnswerConnection = {
   start: () => Promise<void>;
   close: () => void;
   replaceStream: (stream: MediaStream) => void;
+  setVideoBitrate: (bitrate: number) => Promise<void>;
   dataChannel: RTCDataChannel | null;
 };
